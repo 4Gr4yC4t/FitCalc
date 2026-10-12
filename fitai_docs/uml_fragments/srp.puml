@@ -1,0 +1,27 @@
+@startuml
+title SRP — инференс отвечает за запуск модели
+skinparam classAttributeIconSize 0
+
+interface IInferenceService <<interface>> {
+  +run(features: FeatureVector): InferenceResult
+}
+
+class OnnxInferenceService {
+  +run(features: FeatureVector): InferenceResult
+  +close(): None
+}
+
+class InferenceSession <<external: onnxruntime>> {
+  +run(inputs): outputs
+  +close(): None
+}
+
+OnnxInferenceService ..|> IInferenceService
+OnnxInferenceService *-- InferenceSession : owns and closes
+
+note right of OnnxInferenceService
+  Единственная ответственность:
+  передать признаки модели и
+  вернуть результат инференса.
+end note
+@enduml

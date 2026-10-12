@@ -1,0 +1,35 @@
+@startuml
+title ISP — от широкого интерфейса к узким контрактам
+skinparam classAttributeIconSize 0
+
+interface IFitnessDataProvider <<interface>> {
+  +get_profile()
+  +get_training_history()
+  +get_nutrition_log()
+  +get_weight_history()
+}
+
+interface IProfileProvider <<interface>> {
+  +get_profile()
+  +get_goal()
+}
+
+interface ITrainingHistoryProvider <<interface>> {
+  +get_training_history()
+}
+
+interface INutritionDataProvider <<interface>> {
+  +get_nutrition_log()
+  +get_weight_history()
+}
+
+note bottom of IFitnessDataProvider
+  До: клиенту приходилось
+  зависеть от ненужных методов.
+end note
+
+note bottom of INutritionDataProvider
+  После: каждый клиент выбирает
+  только нужный контракт.
+end note
+@enduml

@@ -161,7 +161,6 @@ package "Application" {
 
   interface IInferenceService <<interface>> {
     +run(features: FeatureVector): InferenceResult
-    +close(): None
   }
 
   interface IFeatureBuilder <<interface>> {
@@ -181,11 +180,11 @@ package "Application" {
   }
 
   interface INutritionRecommendationService <<interface>> {
-    +recommend(context: FitnessUserContext, log: NutritionLog, weights: BodyWeightHistory): NutritionRecommendation
+    +recommend(context: FitnessUserContext): NutritionRecommendation
   }
 
   interface IOvertrainingDetector <<interface>> {
-    +detect(context: FitnessUserContext, history: TrainingHistory): OvertrainingAlert
+    +detect(context: FitnessUserContext): OvertrainingAlert
   }
 
   interface IRecommendationFormatter <<interface>> {
@@ -214,7 +213,7 @@ package "Application" {
   }
 
   class FeatureBuilder {
-    +build(context: FitnessUserContext, history: TrainingHistory, log: NutritionLog, weights: BodyWeightHistory): FeatureVector
+    +build(context: FitnessUserContext): FeatureVector
   }
 
   class UserLevelClassifier {
@@ -234,11 +233,11 @@ package "Application" {
   }
 
   class NutritionRecommendationService {
-    +recommend(context: FitnessUserContext, log: NutritionLog, weights: BodyWeightHistory): NutritionRecommendation
+    +recommend(context: FitnessUserContext): NutritionRecommendation
   }
 
   class OvertrainingDetector {
-    +detect(context: FitnessUserContext, history: TrainingHistory): OvertrainingAlert
+    +detect(context: FitnessUserContext): OvertrainingAlert
   }
 
   class RecommendationFormatter {

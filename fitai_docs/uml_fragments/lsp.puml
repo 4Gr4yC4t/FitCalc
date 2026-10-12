@@ -1,0 +1,24 @@
+@startuml
+title LSP — взаимозаменяемые стратегии
+skinparam classAttributeIconSize 0
+
+interface IWorkoutDecisionMaker <<interface>> {
+  +create_plan(context, result): WorkoutPlan
+}
+
+class NeuralNetworkDecisionMaker {
+  +create_plan(context, result): WorkoutPlan
+}
+
+class RuleBasedFallback {
+  +create_plan(context, result): WorkoutPlan
+}
+
+class FitAIController {
+  +build_recommendation(user_id): FitnessRecommendation
+}
+
+NeuralNetworkDecisionMaker ..|> IWorkoutDecisionMaker
+RuleBasedFallback ..|> IWorkoutDecisionMaker
+FitAIController ..> IWorkoutDecisionMaker : calls create_plan()
+@enduml

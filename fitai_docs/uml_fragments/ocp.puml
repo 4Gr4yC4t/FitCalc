@@ -1,0 +1,30 @@
+@startuml
+title OCP — расширение стратегией без правок контроллера
+skinparam classAttributeIconSize 0
+
+interface IWorkoutDecisionMaker <<interface>> {
+  +create_plan(context, result): WorkoutPlan
+}
+
+class FitAIController {
+  +build_recommendation(user_id): FitnessRecommendation
+}
+
+class NeuralNetworkDecisionMaker
+class RuleBasedFallback
+class ProfessionalDecisionMaker
+class FitAIFactory <<Composition Root>>
+
+NeuralNetworkDecisionMaker ..|> IWorkoutDecisionMaker
+RuleBasedFallback ..|> IWorkoutDecisionMaker
+ProfessionalDecisionMaker ..|> IWorkoutDecisionMaker
+FitAIController ..> IWorkoutDecisionMaker : constructor injection
+FitAIFactory ..> FitAIController : builds
+FitAIFactory ..> IWorkoutDecisionMaker : selects implementation
+
+note bottom of ProfessionalDecisionMaker
+  Иллюстрация расширения:
+  новая реализация добавляется
+  без изменения FitAIController.
+end note
+@enduml

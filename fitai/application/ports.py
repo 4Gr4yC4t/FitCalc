@@ -21,6 +21,10 @@ class InferenceUnavailableError(RuntimeError):
     """Raised when inference cannot produce a result from the configured model."""
 
 
+class IAIController(Protocol):
+    def build_recommendation(self, user_id: str) -> FitnessRecommendation: ...
+
+
 @runtime_checkable
 class IProfileProvider(Protocol):
     def get_profile(self, user_id: str) -> UserProfile: ...
@@ -92,6 +96,16 @@ class IDataQualityValidator(Protocol):
 
 
 class IFitCalcApiClient(Protocol):
+    def get_profile(self, user_id: str) -> UserProfile: ...
+
+    def get_goal(self, user_id: str) -> UserGoal: ...
+
+    def get_training_history(self, user_id: str) -> TrainingHistory: ...
+
+    def get_nutrition_log(self, user_id: str) -> NutritionLog: ...
+
+    def get_weight_history(self, user_id: str) -> BodyWeightHistory: ...
+
     def post_recommendation(
         self,
         user_id: str,

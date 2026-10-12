@@ -1,0 +1,28 @@
+@startuml
+title DIP — контроллер зависит от абстракций
+skinparam classAttributeIconSize 0
+
+interface IInferenceService <<interface>> {
+  +run(features): InferenceResult
+}
+
+interface IWorkoutDecisionMaker <<interface>> {
+  +create_plan(context, result): WorkoutPlan
+}
+
+class FitAIController
+class OnnxInferenceService
+class NeuralNetworkDecisionMaker
+class RuleBasedFallback
+
+FitAIController ..> IInferenceService : injected
+FitAIController ..> IWorkoutDecisionMaker : injected
+OnnxInferenceService ..|> IInferenceService
+NeuralNetworkDecisionMaker ..|> IWorkoutDecisionMaker
+RuleBasedFallback ..|> IWorkoutDecisionMaker
+
+note bottom of FitAIController
+  Контроллер не создаёт ONNX-сервис
+  и не привязан к конкретной стратегии.
+end note
+@enduml
