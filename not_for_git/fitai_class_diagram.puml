@@ -1,0 +1,342 @@
+@startuml
+title FitAI — диаграмма классов
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "Domain" {
+  class FitnessUserContext <<entity>> {
+    +user_id: UUID
+    +profile: UserProfile
+    +goal: UserGoal
+    +training_history: TrainingHistory
+    +nutrition_log: NutritionLog
+    +body_weight_history: BodyWeightHistory
+  }
+
+  class UserProfile <<entity>> {
+    +age: int
+    +height_cm: float
+    +weight_kg: float
+    +experience_level: str
+  }
+
+  class UserGoal <<entity>> {
+    +goal_type: str
+    +target_date: date
+  }
+
+  class TrainingHistory <<entity>> {
+    +workouts: list[WorkoutRecord]
+  }
+
+  class WorkoutRecord <<entity>> {
+    +date: datetime
+    +exercises: list[ExerciseRecord]
+  }
+
+  class ExerciseRecord <<entity>> {
+    +name: str
+    +sets: int
+    +reps: int
+    +weight_kg: float
+  }
+
+  class NutritionLog <<entity>> {
+    +entries: list[MealEntry]
+  }
+
+  class MealEntry <<entity>> {
+    +date: datetime
+    +calories: float
+    +protein_g: float
+    +fat_g: float
+    +carbs_g: float
+  }
+
+  class BodyWeightHistory <<entity>> {
+    +measurements: list[WeightMeasurement]
+  }
+
+  class WeightMeasurement <<entity>> {
+    +date: date
+    +weight_kg: float
+  }
+
+  class FeatureVector <<value object>> {
+    +values: list[float]
+  }
+
+  class InferenceResult <<value object>> {
+    +scores: list[float]
+    +metadata: InferenceMetadata
+  }
+
+  class InferenceMetadata <<value object>> {
+    +model_version: str
+    +calculated_at: datetime
+  }
+
+  class WorkoutPlan <<entity>> {
+    +exercises: list[PlannedExercise]
+    +intensity: float
+  }
+
+  class PlannedExercise <<value object>> {
+    +name: str
+    +sets: int
+    +reps: int
+    +weight_kg: float
+  }
+
+  class NutritionRecommendation <<value object>> {
+    +calories: float
+    +protein_g: float
+    +fat_g: float
+    +carbs_g: float
+  }
+
+  class OvertrainingAlert <<value object>> {
+    +is_overtrained: bool
+    +message: str
+  }
+
+  class ProModeSuggestion <<value object>> {
+    +suggested: bool
+    +reason: str
+  }
+
+  class RecommendationExplanation <<value object>> {
+    +text: str
+    +key_factors: list[str]
+  }
+
+  class FitnessRecommendation <<entity>> {
+    +workout_plan: WorkoutPlan
+    +nutrition: NutritionRecommendation
+    +overtraining_alert: OvertrainingAlert
+    +pro_mode_suggestion: ProModeSuggestion
+    +explanation: RecommendationExplanation
+    +metadata: InferenceMetadata
+  }
+
+  FitnessUserContext *-- UserProfile
+  FitnessUserContext *-- UserGoal
+  FitnessUserContext *-- TrainingHistory
+  FitnessUserContext *-- NutritionLog
+  FitnessUserContext *-- BodyWeightHistory
+  TrainingHistory *-- "0..*" WorkoutRecord
+  WorkoutRecord *-- "1..*" ExerciseRecord
+  NutritionLog *-- "0..*" MealEntry
+  BodyWeightHistory *-- "0..*" WeightMeasurement
+  WorkoutPlan *-- "0..*" PlannedExercise
+  FitnessRecommendation *-- WorkoutPlan
+  FitnessRecommendation *-- NutritionRecommendation
+  FitnessRecommendation *-- OvertrainingAlert
+  FitnessRecommendation *-- ProModeSuggestion
+  FitnessRecommendation *-- RecommendationExplanation
+  FitnessRecommendation *-- InferenceMetadata
+}
+
+package "Application" {
+  interface IAIController <<interface>> {
+    +build_recommendation(user_id: UUID): FitnessRecommendation
+  }
+
+  interface IProfileProvider <<interface>> {
+    +get_profile(user_id: UUID): UserProfile
+    +get_goal(user_id: UUID): UserGoal
+  }
+
+  interface ITrainingHistoryProvider <<interface>> {
+    +get_training_history(user_id: UUID): TrainingHistory
+  }
+
+  interface INutritionDataProvider <<interface>> {
+    +get_nutrition_log(user_id: UUID): NutritionLog
+    +get_weight_history(user_id: UUID): BodyWeightHistory
+  }
+
+  interface IInferenceService <<interface>> {
+    +run(features: FeatureVector): InferenceResult
+    +close(): None
+  }
+
+  interface IWorkoutDecisionMaker <<interface>> {
+    +create_plan(context: FitnessUserContext, result: InferenceResult | None): WorkoutPlan
+  }
+
+  interface INutritionRecommendationService <<interface>> {
+    +recommend(context: FitnessUserContext, log: NutritionLog, weights: BodyWeightHistory): NutritionRecommendation
+  }
+
+  interface IOvertrainingDetector <<interface>> {
+    +detect(context: FitnessUserContext, history: TrainingHistory): OvertrainingAlert
+  }
+
+  interface IRecommendationFormatter <<interface>> {
+    +explain(recommendation: FitnessRecommendation): RecommendationExplanation
+  }
+
+  interface IDataQualityValidator <<interface>> {
+    +validate(context: FitnessUserContext): bool
+  }
+
+  interface IRuleBasedFallback <<interface>> {
+    +create_plan(context: FitnessUserContext, result: InferenceResult | None): WorkoutPlan
+  }
+
+  interface IFitCalcApiClient <<interface>> {
+    +get_profile(user_id: UUID): UserProfile
+    +get_goal(user_id: UUID): UserGoal
+    +get_training_history(user_id: UUID): TrainingHistory
+    +get_nutrition_log(user_id: UUID): NutritionLog
+    +get_weight_history(user_id: UUID): BodyWeightHistory
+    +post_recommendation(user_id: UUID, recommendation: FitnessRecommendation): None
+  }
+
+  class FitAIController {
+    +build_recommendation(user_id: UUID): FitnessRecommendation
+  }
+
+  class FeatureBuilder {
+    +build(context: FitnessUserContext, history: TrainingHistory, log: NutritionLog, weights: BodyWeightHistory): FeatureVector
+  }
+
+  class UserLevelClassifier {
+    +classify(context: FitnessUserContext, history: TrainingHistory): str
+  }
+
+  class WorkoutPlanGenerator {
+    +generate(context: FitnessUserContext, result: InferenceResult, level: str): WorkoutPlan
+  }
+
+  class NeuralNetworkDecisionMaker {
+    +create_plan(context: FitnessUserContext, result: InferenceResult | None): WorkoutPlan
+  }
+
+  class RuleBasedFallback {
+    +create_plan(context: FitnessUserContext, result: InferenceResult | None): WorkoutPlan
+  }
+
+  class NutritionRecommendationService {
+    +recommend(context: FitnessUserContext, log: NutritionLog, weights: BodyWeightHistory): NutritionRecommendation
+  }
+
+  class OvertrainingDetector {
+    +detect(context: FitnessUserContext, history: TrainingHistory): OvertrainingAlert
+  }
+
+  class RecommendationFormatter {
+    +explain(recommendation: FitnessRecommendation): RecommendationExplanation
+  }
+
+  class DataQualityValidator {
+    +validate(context: FitnessUserContext): bool
+  }
+
+  FitAIController ..|> IAIController
+  DataQualityValidator ..|> IDataQualityValidator
+  NeuralNetworkDecisionMaker ..|> IWorkoutDecisionMaker
+  RuleBasedFallback ..|> IRuleBasedFallback
+  RuleBasedFallback ..|> IWorkoutDecisionMaker
+  NutritionRecommendationService ..|> INutritionRecommendationService
+  OvertrainingDetector ..|> IOvertrainingDetector
+  RecommendationFormatter ..|> IRecommendationFormatter
+
+  IRuleBasedFallback --|> IWorkoutDecisionMaker
+
+  FitAIController ..> IProfileProvider : inject
+  FitAIController ..> ITrainingHistoryProvider : inject
+  FitAIController ..> INutritionDataProvider : inject
+  FitAIController ..> IWorkoutDecisionMaker : inject
+  FitAIController ..> IRuleBasedFallback : fallback
+  FitAIController ..> INutritionRecommendationService : inject
+  FitAIController ..> IOvertrainingDetector : inject
+  FitAIController ..> IRecommendationFormatter : inject
+  FitAIController ..> IFitCalcApiClient : publish result
+  FitAIController ..> IDataQualityValidator : validate input
+
+  NeuralNetworkDecisionMaker --> FeatureBuilder
+  NeuralNetworkDecisionMaker --> UserLevelClassifier
+  NeuralNetworkDecisionMaker --> WorkoutPlanGenerator
+  NeuralNetworkDecisionMaker ..> IInferenceService : infer
+  RuleBasedFallback --> WorkoutPlanGenerator
+}
+
+package "Infrastructure" {
+  class FitnessDataProvider
+  class FitCalcApiClient
+  class OnnxInferenceService {
+    +run(features: FeatureVector): InferenceResult
+    +close(): None
+  }
+  class OnnxModelLoader {
+    +load(model_path: str): InferenceSession
+  }
+  class InferenceSession <<external: onnxruntime>> {
+    +run(inputs): outputs
+    +close(): None
+  }
+
+  FitnessDataProvider ..|> IProfileProvider
+  FitnessDataProvider ..|> ITrainingHistoryProvider
+  FitnessDataProvider ..|> INutritionDataProvider
+  FitnessDataProvider ..> IFitCalcApiClient : fetch data
+  FitCalcApiClient ..|> IFitCalcApiClient
+  OnnxInferenceService ..|> IInferenceService
+  OnnxInferenceService --> OnnxModelLoader
+  OnnxModelLoader ..> InferenceSession : creates
+  OnnxInferenceService *-- InferenceSession : owns / closes
+}
+
+package "Composition Root" {
+  class FitAIFactory {
+    +create_controller(use_fallback: bool): IAIController
+  }
+
+  FitAIFactory ..> FitAIController : wires dependencies
+  FitAIFactory ..> FitnessDataProvider : creates
+  FitAIFactory ..> FitCalcApiClient : creates
+  FitAIFactory ..> OnnxInferenceService : creates
+  FitAIFactory ..> NeuralNetworkDecisionMaker : selects
+  FitAIFactory ..> RuleBasedFallback : selects
+}
+
+package "ISP: прежний контракт (до рефакторинга)" {
+  interface IFitnessDataProvider <<interface>> {
+    +get_full_context(user_id: UUID): FitnessUserContext
+    +get_nutrition_log(user_id: UUID): NutritionLog
+    +get_weight_history(user_id: UUID): BodyWeightHistory
+  }
+}
+
+note right of IFitnessDataProvider
+  Было: один широкий интерфейс
+  Стало: IProfileProvider,
+  ITrainingHistoryProvider и
+  INutritionDataProvider.
+  Финальный код зависит от новых
+  интерфейсов, не от этого контракта.
+end note
+
+note bottom of FitAIController
+  Контроллер получает абстракции через конструктор.
+  При ошибке инференса использует IRuleBasedFallback.
+  Для замены стратегии меняется Composition Root,
+  а не контроллер.
+end note
+
+note bottom of OnnxInferenceService
+  Только запуск модели. Сессия закрывается
+  через close() или контекстный менеджер.
+end note
+
+note bottom of FitAIFactory
+  Единственная точка создания и связывания
+  конкретных реализаций.
+end note
+
+@enduml
