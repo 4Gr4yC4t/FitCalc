@@ -4,6 +4,7 @@ from typing import Any
 
 import numpy
 
+from fitai.application.ports import InferenceUnavailableError
 from fitai.domain.models import FeatureVector
 from fitai.infrastructure.onnx_inference_service import OnnxInferenceService
 
@@ -79,7 +80,7 @@ class OnnxInferenceServiceTests(unittest.TestCase):
         failure = RuntimeError("model execution failed")
         session.run_error = failure
 
-        with self.assertRaisesRegex(RuntimeError, "model execution failed"):
+        with self.assertRaisesRegex(InferenceUnavailableError, "ONNX model"):
             service.run(FeatureVector((1,)))
 
     def test_multiple_model_outputs_are_rejected(self) -> None:

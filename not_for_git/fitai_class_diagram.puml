@@ -164,8 +164,20 @@ package "Application" {
     +close(): None
   }
 
+  interface IFeatureBuilder <<interface>> {
+    +build(context: FitnessUserContext): FeatureVector
+  }
+
   interface IWorkoutDecisionMaker <<interface>> {
     +create_plan(context: FitnessUserContext, result: InferenceResult | None): WorkoutPlan
+  }
+
+  interface IWorkoutPlanGenerator <<interface>> {
+    +generate(context: FitnessUserContext, result: InferenceResult): WorkoutPlan
+  }
+
+  interface IRuleBasedPlanBuilder <<interface>> {
+    +build(context: FitnessUserContext): WorkoutPlan
   }
 
   interface INutritionRecommendationService <<interface>> {
@@ -239,6 +251,7 @@ package "Application" {
 
   FitAIController ..|> IAIController
   DataQualityValidator ..|> IDataQualityValidator
+  FeatureBuilder ..|> IFeatureBuilder
   NeuralNetworkDecisionMaker ..|> IWorkoutDecisionMaker
   RuleBasedFallback ..|> IRuleBasedFallback
   RuleBasedFallback ..|> IWorkoutDecisionMaker
@@ -251,19 +264,18 @@ package "Application" {
   FitAIController ..> IProfileProvider : inject
   FitAIController ..> ITrainingHistoryProvider : inject
   FitAIController ..> INutritionDataProvider : inject
+  FitAIController ..> IFeatureBuilder : inject
+  FitAIController ..> IInferenceService : inject
   FitAIController ..> IWorkoutDecisionMaker : inject
-  FitAIController ..> IRuleBasedFallback : fallback
   FitAIController ..> INutritionRecommendationService : inject
   FitAIController ..> IOvertrainingDetector : inject
   FitAIController ..> IRecommendationFormatter : inject
   FitAIController ..> IFitCalcApiClient : publish result
   FitAIController ..> IDataQualityValidator : validate input
 
-  NeuralNetworkDecisionMaker --> FeatureBuilder
-  NeuralNetworkDecisionMaker --> UserLevelClassifier
-  NeuralNetworkDecisionMaker --> WorkoutPlanGenerator
-  NeuralNetworkDecisionMaker ..> IInferenceService : infer
-  RuleBasedFallback --> WorkoutPlanGenerator
+  NeuralNetworkDecisionMaker ..> IWorkoutPlanGenerator : model result
+  NeuralNetworkDecisionMaker ..> IRuleBasedPlanBuilder : missing result
+  RuleBasedFallback ..> IRuleBasedPlanBuilder
 }
 
 package "Infrastructure" {
@@ -307,24 +319,24 @@ package "Composition Root" {
 
 package "ISP: прежний контракт (до рефакторинга)" {
   interface IFitnessDataProvider <<interface>> {
-    +get_full_context(user_id: UUID): FitnessUserContext
+    +get_profile(user_id: UUID): UserProfile
+    +get_goal(user_id: UUID): UserGoal
+    +get_training_history(user_id: UUID): TrainingHistory
     +get_nutrition_log(user_id: UUID): NutritionLog
     +get_weight_history(user_id: UUID): BodyWeightHistory
   }
 }
 
 note right of IFitnessDataProvider
-  Было: один широкий интерфейс
-  Стало: IProfileProvider,
-  ITrainingHistoryProvider и
-  INutritionDataProvider.
-  Финальный код зависит от новых
-  интерфейсов, не от этого контракта.
+  Было: один широкий интерфейс для профиля,
+  тренировок, питания и веса.
+  Стало: три независимых контракта выше.
+  Клиент реализует только нужный ему порт.
 end note
 
 note bottom of FitAIController
   Контроллер получает абстракции через конструктор.
-  При ошибке инференса использует IRuleBasedFallback.
+  При ошибке инференса передаёт стратегии None.
   Для замены стратегии меняется Composition Root,
   а не контроллер.
 end note

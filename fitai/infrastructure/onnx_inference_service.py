@@ -1,6 +1,7 @@
 from os import PathLike
 from typing import Any, Protocol, Sequence
 
+from fitai.application.ports import InferenceUnavailableError
 from fitai.domain.models import FeatureVector, InferenceResult
 
 
@@ -64,7 +65,10 @@ class OnnxInferenceService:
         import numpy
 
         tensor = numpy.asarray([features.values], dtype=numpy.float32)
-        outputs = self._session.run(None, {self._input_name: tensor})
+        try:
+            outputs = self._session.run(None, {self._input_name: tensor})
+        except RuntimeError as error:
+            raise InferenceUnavailableError("ONNX model execution failed") from error
         if len(outputs) != 1:
             raise RuntimeError(
                 f"Expected one ONNX output tensor, got {len(outputs)}"
