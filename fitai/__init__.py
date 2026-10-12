@@ -1,0 +1,1 @@
+"""FitAI recommendation module."""

@@ -117,3 +117,25 @@
 | **Алгоритмы**         | Математическая модель расчета калорий, логика начисления очков рейтинга |
 | **Аналитика**         | Pandas / NumPy                                                          |
 | **Платформа**         | Web-приложение                                                          |
+
+## FitAI: запуск ONNX-модели
+
+`OnnxInferenceService` отвечает только за передачу вектора признаков в ONNX-модель и возврат её числового результата. Создание вектора и смысловая интерпретация результата относятся к другим компонентам.
+
+Чтобы запустить тесты сервиса без ONNX-модели:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+Для запуска реальной модели нужны `numpy` и `onnxruntime`. Сессию модели нужно закрывать — это можно сделать через контекстный менеджер:
+
+```python
+from fitai.domain.models import FeatureVector
+from fitai.infrastructure.onnx_inference_service import OnnxInferenceService
+
+with OnnxInferenceService.from_model("model.onnx") as inference:
+    result = inference.run(FeatureVector((0.4, 1.2, 3.0)))
+```
+
+Сервис на этом этапе рассчитан на модель с одним входным и одним выходным тензором. Сам файл модели в репозитории пока не включён.
