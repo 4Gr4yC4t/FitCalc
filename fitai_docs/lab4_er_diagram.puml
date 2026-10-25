@@ -1,0 +1,71 @@
+@startuml
+hide circle
+skinparam linetype ortho
+
+entity strategies {
+  * id : INTEGER <<PK>>
+  --
+  * type_name : VARCHAR <<UNIQUE>>
+  description : VARCHAR
+}
+
+entity ai_agents {
+  * id : UUID <<PK>>
+  --
+  * name : VARCHAR
+  * version : VARCHAR
+  * created_at : DATETIME
+  * current_strategy_id : INTEGER <<FK>>
+}
+
+entity parameter_sets {
+  * id : INTEGER <<PK>>
+  --
+  * name : VARCHAR <<UNIQUE>>
+}
+
+entity parameters {
+  * id : INTEGER <<PK>>
+  --
+  * parameter_set_id : INTEGER <<FK>>
+  * param_key : VARCHAR
+  * param_value : VARCHAR
+  --
+  UNIQUE(parameter_set_id, param_key)
+}
+
+entity agent_parameter_sets {
+  * agent_id : UUID <<PK, FK>>
+  * parameter_set_id : INTEGER <<PK, FK>>
+}
+
+entity performance_metrics {
+  * id : INTEGER <<PK>>
+  --
+  * agent_id : UUID <<FK>>
+  * timestamp : DATETIME
+  * inference_ms : FLOAT
+  * current_fps : FLOAT
+  * gc_allocated_mb : FLOAT
+  * false_positives : INTEGER
+}
+
+entity player_progress {
+  * id : INTEGER <<PK>>
+  --
+  * player_name : VARCHAR
+  * unlocked_difficulty : VARCHAR
+  * inventory_json : TEXT
+}
+
+strategies ||--o{ ai_agents
+ai_agents ||--o{ performance_metrics
+ai_agents ||--o{ agent_parameter_sets
+parameter_sets ||--o{ agent_parameter_sets
+parameter_sets ||--o{ parameters
+note right of player_progress
+  inventory_json is kept as JSON for
+  a flexible, self-contained inventory.
+  It is the documented 1NF exception.
+end note
+@enduml

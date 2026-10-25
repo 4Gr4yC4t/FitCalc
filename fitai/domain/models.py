@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import math
 from datetime import date, datetime
 from typing import Any
+from uuid import UUID, uuid4
 
 
 @dataclass(frozen=True)
@@ -123,3 +124,30 @@ class FitnessRecommendation:
     pro_mode_suggestion: ProModeSuggestion
     explanation: RecommendationExplanation
     metadata: InferenceMetadata | None = None
+
+
+@dataclass(frozen=True)
+class AiAgent:
+    name: str
+    version: str
+    strategy: str
+    parameters: dict[str, str] = field(default_factory=dict)
+    id: UUID = field(default_factory=uuid4)
+
+
+@dataclass(frozen=True)
+class PerformanceMetric:
+    agent_id: UUID
+    timestamp: datetime
+    inference_ms: float
+    current_fps: float
+    gc_allocated_mb: float = 0.0
+    false_positives: int = 0
+
+
+@dataclass(frozen=True)
+class PlayerProgress:
+    player_name: str
+    unlocked_difficulty: str
+    inventory: dict[str, int]
+    id: int | None = None
