@@ -12,6 +12,7 @@ from fitai.application.workout_plans import (
     WorkoutPlanService,
 )
 from fitai.domain.models import WorkoutPlan
+from fitai.web.api import create_api_router
 
 LEVEL_LABELS = {
     ExperienceLevel.BEGINNER: "Начинающий",
@@ -21,7 +22,11 @@ LEVEL_LABELS = {
 
 
 def create_app(plan_service: WorkoutPlanService | None = None) -> FastAPI:
-    app = FastAPI(title="FitCalc")
+    app = FastAPI(
+        title="FitCalc",
+        version="1.0.0",
+        description="Планы тренировок по уровню подготовки.",
+    )
     if plan_service is None:
         plan_service = WorkoutPlanService(RuleBasedFallback(ExperiencePlanBuilder()))
     templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
@@ -65,6 +70,7 @@ def create_app(plan_service: WorkoutPlanService | None = None) -> FastAPI:
             request, level=experience, plan=plan_service.plan_for_level(experience)
         )
 
+    app.include_router(create_api_router(plan_service, LEVEL_LABELS))
     return app
 
 
