@@ -1,6 +1,6 @@
 from collections.abc import Iterable
+from dataclasses import replace
 from datetime import datetime, timezone
-import json
 from uuid import UUID
 
 from sqlalchemy import select
@@ -8,9 +8,14 @@ from sqlalchemy.orm import selectinload, sessionmaker
 
 from fitai.domain.models import AiAgent, PerformanceMetric, PlayerProgress
 from fitai.domain.repository import IAgentRepository
+from fitai.infrastructure.data_mapper import (
+    agent_from_row,
+    metric_to_row,
+    progress_from_row,
+    progress_to_row,
+)
 from fitai.infrastructure.orm import (
     AgentRow,
-    MetricRow,
     ParameterRow,
     ParameterSetRow,
     PlayerProgressRow,
@@ -87,34 +92,10 @@ class SqlAgentRepository(IAgentRepository):
                     ),
                 )
             )
-            if row is None:
-                return None
-
-            parameters = {
-                parameter.param_key: parameter.param_value
-                for parameter_set in row.parameter_sets
-                for parameter in parameter_set.parameters
-            }
-            return AiAgent(
-                id=UUID(row.id),
-                name=row.name,
-                version=row.version,
-                strategy=row.strategy.type_name,
-                parameters=parameters,
-            )
+            return agent_from_row(row) if row is not None else None
 
     def log_performance(self, metrics: Iterable[PerformanceMetric]) -> None:
-        rows = [
-            MetricRow(
-                agent_id=str(metric.agent_id),
-                timestamp=self._as_utc_naive(metric.timestamp),
-                inference_ms=metric.inference_ms,
-                current_fps=metric.current_fps,
-                gc_allocated_mb=metric.gc_allocated_mb,
-                false_positives=metric.false_positives,
-            )
-            for metric in metrics
-        ]
+        rows = [metric_to_row(metric) for metric in metrics]
         if not rows:
             return
         with self._session_factory() as session, session.begin():
@@ -125,34 +106,12 @@ class SqlAgentRepository(IAgentRepository):
         progress: PlayerProgress,
     ) -> PlayerProgress:
         with self._session_factory() as session, session.begin():
-            row = PlayerProgressRow(
-                player_name=progress.player_name,
-                unlocked_difficulty=progress.unlocked_difficulty,
-                inventory_json=json.dumps(progress.inventory, separators=(",", ":")),
-            )
+            row = progress_to_row(progress)
             session.add(row)
             session.flush()
-            return PlayerProgress(
-                id=row.id,
-                player_name=row.player_name,
-                unlocked_difficulty=row.unlocked_difficulty,
-                inventory=progress.inventory.copy(),
-            )
+            return replace(progress, id=row.id, inventory=progress.inventory.copy())
 
     def get_player_progress(self, progress_id: int) -> PlayerProgress | None:
         with self._session_factory() as session:
             row = session.get(PlayerProgressRow, progress_id)
-            if row is None:
-                return None
-            return PlayerProgress(
-                id=row.id,
-                player_name=row.player_name,
-                unlocked_difficulty=row.unlocked_difficulty,
-                inventory=json.loads(row.inventory_json),
-            )
-
-    @staticmethod
-    def _as_utc_naive(value: datetime) -> datetime:
-        if value.tzinfo is None:
-            return value
-        return value.astimezone(timezone.utc).replace(tzinfo=None)
+            return progress_from_row(row) if row is not None else None
